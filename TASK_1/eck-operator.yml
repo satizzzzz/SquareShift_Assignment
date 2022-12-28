@@ -1,0 +1,57 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: eck-operator
+spec:
+  version: 8.5.3
+  nodeSets:
+    - name: master
+      count: 3
+      config:
+        node.master: true
+        node.data: false
+        node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              env:
+                - name: ES_JAVA_OPTS
+                  value: -Xms500m -Xmx500m
+              resources:
+                requests:
+                  cpu: 9
+          volumes:
+            - name: elasticsearch-data
+              emptyDir: {}
+
+    - name: data
+      count: 3
+      config:
+        node.master: false
+        node.data: true
+        node.store.allow_mmap: false
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              env:
+                - name: ES_JAVA_OPTS
+                  value: -Xms500m -Xmx500m
+              resources:
+                requests:
+                  cpu: 9
+          volumes:
+            - name: elasticsearch-data
+              emptyDir: {}
+
+
+  http:
+    service:
+      spec:
+        type: NodePort
+        ports:
+          - port: 9200
+            targetPort: 9200
+            protocol: TCP
+            nodePort: 9200
